@@ -1,4 +1,4 @@
-<![CDATA[# 🤖 NovaAI — Real-Time AI Voice Interviewer
+# 🤖 NovaAI — Real-Time AI Voice Interviewer
 
 > **A production-grade, voice-first AI interviewer that conducts live interviews, captures real-time transcripts, and generates AI-powered evaluation reports — all through natural conversation.**
 
@@ -564,4 +564,3 @@ This project is private and built for Cuemath's tutor screening process.
 <p align="center">
   Built with 🧠 by <strong>NovaAI Team</strong> — Powered by Vapi, Gemini & Next.js
 </p>
-]]>
