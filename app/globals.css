@@ -1,26 +1,309 @@
 @import "tailwindcss";
 
+/* =============================================
+   NovaAI — Kinetic Terminal Design System
+   Neo-Brutalist · 0px Radius · Hard Shadows
+   ============================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-primary: #000000;
+  --bg-surface: #0e0e0e;
+  --bg-container: #191919;
+  --bg-container-high: #1f1f1f;
+  --bg-container-low: #131313;
+  --bg-bright: #2c2c2c;
+
+  --accent-primary: #bcff5f;
+  --accent-primary-dim: #95e400;
+  --accent-secondary: #ff51fa;
+  --accent-tertiary: #00ffff;
+  --accent-error: #ff7351;
+
+  --text-primary: #ffffff;
+  --text-secondary: #ababab;
+  --text-muted: #757575;
+
+  --border-subtle: #484848;
+  --border-strong: #000000;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Space Grotesk', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--accent-primary);
+  color: #000000;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+/* =============================================
+   Grid Pattern Background
+   ============================================= */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(188, 255, 95, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(188, 255, 95, 0.07) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* =============================================
+   Neo-Brutalist Hard Shadows
+   ============================================= */
+.hard-shadow-green {
+  box-shadow: 8px 8px 0px 0px var(--accent-primary);
+}
+.hard-shadow-pink {
+  box-shadow: 8px 8px 0px 0px var(--accent-secondary);
+}
+.hard-shadow-black {
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+.hard-shadow-white {
+  box-shadow: 4px 4px 0px 0px #ffffff;
+}
+.hard-shadow-big {
+  box-shadow: 12px 12px 0px 0px var(--accent-secondary);
+}
+
+/* =============================================
+   Text Effects
+   ============================================= */
+.text-outline {
+  -webkit-text-stroke: 1px var(--accent-primary);
+  color: transparent;
+}
+
+/* =============================================
+   Animations
+   ============================================= */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(188, 255, 95, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(188, 255, 95, 0.6); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1.5); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+.animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+.animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+/* =============================================
+   Gradient Text
+   ============================================= */
+.gradient-text {
+  background: linear-gradient(135deg, #bcff5f 0%, #00ffff 50%, #ff51fa 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* =============================================
+   Buttons
+   ============================================= */
+.btn-primary {
+  background: var(--accent-primary);
+  color: #000000;
+  padding: 16px 32px;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  border: 4px solid #000000;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 8px 8px 0px 0px var(--accent-secondary);
+}
+.btn-primary:hover {
+  transform: translate(4px, 4px);
+  box-shadow: 4px 4px 0px 0px var(--accent-secondary);
+}
+.btn-primary:active {
+  transform: translate(8px, 8px);
+  box-shadow: none;
+}
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent-primary);
+  padding: 16px 32px;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  border: 4px solid var(--accent-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-secondary:hover {
+  background: rgba(188, 255, 95, 0.1);
+}
+
+.btn-danger {
+  background: var(--accent-error);
+  color: #000000;
+  padding: 16px 32px;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  border: 4px solid #000000;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 4px 4px 0px 0px #000;
+}
+.btn-danger:hover {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+
+/* =============================================
+   Cards
+   ============================================= */
+.card {
+  background: var(--bg-container-high);
+  border: 4px solid var(--bg-primary);
+  padding: 24px;
+  transition: all 0.2s ease;
+  box-shadow: 8px 8px 0px 0px var(--accent-primary);
+}
+.card:hover {
+  transform: translate(4px, 4px);
+  box-shadow: 4px 4px 0px 0px var(--accent-primary);
+}
+
+/* =============================================
+   Glass (kept for compatibility)
+   ============================================= */
+.glass {
+  background: rgba(25, 25, 25, 0.8);
+  backdrop-filter: blur(20px);
+  border: 4px solid var(--border-subtle);
+}
+.glass-strong {
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(40px);
+  border: 4px solid var(--border-subtle);
+}
+
+/* =============================================
+   Score Bar
+   ============================================= */
+.score-bar-bg {
+  background: rgba(255, 255, 255, 0.05);
+  height: 8px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--accent-primary);
+}
+
+/* =============================================
+   Mic Button
+   ============================================= */
+.mic-button {
+  width: 120px; height: 120px;
+  background: var(--accent-primary);
+  border: 4px solid #000;
+  cursor: pointer;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 1;
+  box-shadow: 8px 8px 0px 0px var(--accent-secondary);
+}
+.mic-button:hover { transform: translate(4px, 4px); box-shadow: 4px 4px 0px 0px var(--accent-secondary); }
+.mic-button.active { animation: glow-pulse 2s ease-in-out infinite; background: var(--accent-primary); }
+.mic-button.muted { background: var(--accent-error); }
+.mic-button .ring {
+  position: absolute; width: 100%; height: 100%;
+  border: 2px solid var(--accent-primary);
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+.mic-button .ring:nth-child(2) { animation-delay: 0.5s; }
+.mic-button .ring:nth-child(3) { animation-delay: 1s; }
+
+/* =============================================
+   Visualizer & Transcript
+   ============================================= */
+.visualizer-bar {
+  width: 4px;
+  background: var(--accent-primary);
+  animation: wave 0.8s ease-in-out infinite;
+}
+.transcript-entry {
+  padding: 12px 16px;
+  max-width: 80%;
+}
+.transcript-entry.ai {
+  background: rgba(188, 255, 95, 0.08);
+  border: 2px solid rgba(188, 255, 95, 0.2);
+  margin-right: auto;
+}
+.transcript-entry.user {
+  background: rgba(255, 81, 250, 0.08);
+  border: 2px solid rgba(255, 81, 250, 0.2);
+  margin-left: auto;
+  text-align: right;
+}
+
+/* =============================================
+   Noise Background
+   ============================================= */
+.noise-bg::before {
+  content: '';
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+@media (max-width: 768px) {
+  .mic-button { width: 90px; height: 90px; }
 }
