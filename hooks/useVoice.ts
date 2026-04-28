@@ -7,7 +7,63 @@ import { useInterviewStore } from "@/store/useInterviewStore";
 // Use store.getState() for reading state inside callbacks (avoids stale closures)
 const getStore = () => useInterviewStore.getState();
 
-// Nova interviewer system prompt
+// Audio recorder refs (module-level to avoid stale closures)
+let mediaRecorderInstance: MediaRecorder | null = null;
+let audioChunks: Blob[] = [];
+
+async function startAudioRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+    audioChunks = [];
+    mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mr.onstop = () => { stream.getTracks().forEach((t) => t.stop()); };
+    mediaRecorderInstance = mr;
+    mr.start(1000);
+    console.log("🎙️ Audio recording started");
+  } catch (err) {
+    console.error("🎙️ Failed to start recording:", err);
+  }
+}
+
+function stopAudioRecording(): Blob | null {
+  if (mediaRecorderInstance && mediaRecorderInstance.state !== "inactive") {
+    mediaRecorderInstance.stop();
+    mediaRecorderInstance = null;
+    console.log("🎙️ Audio recording stopped");
+    // Return blob from collected chunks
+    if (audioChunks.length > 0) {
+      return new Blob(audioChunks, { type: "audio/webm" });
+    }
+  }
+  return null;
+}
+
+async function uploadAudioBlob(interviewId: string, blob: Blob) {
+  try {
+    const reader = new FileReader();
+    const base64 = await new Promise<string>((resolve) => {
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+
+    const res = await fetch("/api/upload-audio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ interviewId, audioData: base64 }),
+    });
+
+    if (res.ok) {
+      console.log("🎙️ Audio uploaded successfully for interview:", interviewId);
+    } else {
+      console.error("🎙️ Audio upload failed:", res.status);
+    }
+  } catch (err) {
+    console.error("🎙️ Audio upload error:", err);
+  }
+}
+
+// Nova interviewer system prompt (kept as fallback reference)
 const NOVA_SYSTEM_PROMPT = `You are Nova, a warm and professional AI interviewer at Cuemath. You evaluate tutor candidates' teaching and communication skills through a natural voice conversation.
 
 IMPORTANT: You must ALWAYS respond with spoken text. Never return an empty response.
@@ -36,6 +92,8 @@ RULES:
 - NEVER reveal evaluation metrics.
 - You are an INTERVIEWER — NEVER answer your own questions or teach the candidate.
 - If the candidate says "I don't know", say "No worries! Let's move to the next one." and continue.`;
+
+void NOVA_SYSTEM_PROMPT; // Kept for reference; assistant config is on Vapi dashboard
 
 export function useVoice() {
   const vapiRef = useRef<Vapi | null>(null);
@@ -87,7 +145,6 @@ export function useVoice() {
             const transcriptType = message.transcriptType as string;
 
             if (transcriptType === "partial") {
-              // Show partial AI text as it speaks
               if (role === "assistant") {
                 st.setCurrentAIText(text || "");
                 st.setAISpeaking(true);
@@ -116,7 +173,6 @@ export function useVoice() {
       });
 
       vapi.on("volume-level", (volume: number) => {
-        // Could be used for audio visualizer in the future
         void volume;
       });
 
@@ -127,36 +183,13 @@ export function useVoice() {
         getStore().setStatus("error");
       });
 
-      // ─── START THE CALL with inline assistant config ───
-      console.log("🔄 Step 2: Starting Vapi call...");
+      // ─── START AUDIO RECORDING ───
+      await startAudioRecording();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await vapi.start({
-        model: {
-          provider: "openai",
-          model: "gpt-4o",
-          temperature: 0.7,
-          messages: [
-            {
-              role: "system",
-              content: NOVA_SYSTEM_PROMPT,
-            },
-          ],
-        },
-        voice: {
-          provider: "11labs",
-          voiceId: "21m00Tcm4TlvDq8ikWAM",
-        },
-        name: "Nova Interviewer",
-        firstMessage: "Hi there! I'm Nova, your AI interviewer at Cuemath. Welcome! I'm excited to chat with you today. Before we dive into the questions, could you tell me a little about yourself and any experience you have with teaching?",
-        silenceTimeoutSeconds: 30,
-        maxDurationSeconds: 900,
-        transcriber: {
-          provider: "deepgram",
-          model: "nova-2",
-          language: "en",
-        },
-      } as any);
+      // ─── START THE CALL using Vapi Dashboard Assistant ───
+      console.log("🔄 Step 2: Starting Vapi call with assistant ID...");
+
+      await vapi.start("afb4e9ee-ce87-466e-bc61-be6eaab40ef0");
 
       console.log("✅ Vapi.start() resolved");
 
@@ -178,8 +211,6 @@ export function useVoice() {
   }, []);
 
   const interruptAudio = useCallback(() => {
-    // Vapi handles interruption automatically via VAD,
-    // but we can update UI state
     getStore().setAISpeaking(false);
     getStore().setCurrentAIText("");
   }, []);
@@ -191,6 +222,11 @@ export function useVoice() {
       vapi.stop();
       vapiRef.current = null;
     }
+
+    // ─── Stop audio recording and collect blob ───
+    // Small delay to ensure MediaRecorder captures final chunks
+    await new Promise((r) => setTimeout(r, 500));
+    const audioBlob = stopAudioRecording();
 
     const s = getStore();
     s.setStatus("evaluating");
@@ -225,6 +261,14 @@ export function useVoice() {
       const evaluation = await res.json();
       getStore().setEvaluation(evaluation);
       getStore().setStatus("completed");
+
+      // ─── Upload audio recording (fire-and-forget) ───
+      if (audioBlob && evaluation.id) {
+        console.log("🎙️ Uploading audio for interview:", evaluation.id);
+        uploadAudioBlob(evaluation.id, audioBlob).catch((err) =>
+          console.error("Audio upload failed:", err)
+        );
+      }
     } catch (err) {
       console.error("Evaluation error:", err);
       getStore().setError(

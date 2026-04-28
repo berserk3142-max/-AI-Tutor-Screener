@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { interviews } from "@/db/schema";
+import { sendEvaluationEmail } from "@/lib/email";
 
 const EVAL_PROMPT = `You are an expert evaluator of teaching and communication skills. Analyze the following interview transcript and provide a structured evaluation.
 
@@ -152,6 +154,15 @@ function localFallbackEvaluation(
 
 export async function POST(req: Request) {
   try {
+    // ─── Auth Check ───
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized — please sign in" },
+        { status: 401 }
+      );
+    }
+
     const { transcript, candidateName, duration, questionCount } =
       await req.json();
 
@@ -183,11 +194,12 @@ export async function POST(req: Request) {
 
     const evaluation = result.evaluation;
 
-    // Step 2: Save to database
+    // Step 2: Save to database with userId
     const interviewId = crypto.randomUUID();
 
     await db.insert(interviews).values({
       id: interviewId,
+      userId,
       candidateName: candidateName || "Anonymous",
       transcript,
       clarity: evaluation.clarity as number,
@@ -205,10 +217,37 @@ export async function POST(req: Request) {
       status: "completed",
     });
 
+    // ─── Send email notification (fire-and-forget) ───
+    try {
+      const user = await currentUser();
+      const email = user?.primaryEmailAddress?.emailAddress;
+      if (email) {
+        sendEvaluationEmail({
+          to: email,
+          candidateName: candidateName || "Anonymous",
+          overallScore: evaluation.overallScore as number,
+          clarity: evaluation.clarity as number,
+          patience: evaluation.patience as number,
+          fluency: evaluation.fluency as number,
+          warmth: evaluation.warmth as number,
+          simplicity: evaluation.simplicity as number,
+          summary: evaluation.summary as string,
+          strengths: (evaluation.strengths as string[]) || [],
+          improvements: (evaluation.improvements as string[]) || [],
+          interviewId,
+        }).catch((err) => console.error("Email send failed:", err));
+      }
+    } catch (emailErr) {
+      console.error("Email lookup failed:", emailErr);
+    }
+
     return NextResponse.json({
       id: interviewId,
       ...evaluation,
     });
+
+    // Fire-and-forget: send email notification
+    // (runs after response is sent)
   } catch (error) {
     console.error("Evaluate error:", error);
     return NextResponse.json(
