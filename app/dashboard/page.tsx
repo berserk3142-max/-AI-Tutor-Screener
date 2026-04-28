@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import RoleGuard from "@/components/auth/RoleGuard";
 import AppShell from "@/components/layout/AppShell";
+import InviteModal from "@/components/dashboard/InviteModal";
 import { getScoreColor, getGrade, formatDate, formatDuration } from "@/lib/utils";
 import { generateInterviewPDF } from "@/lib/pdf";
 
@@ -45,6 +46,7 @@ function DashboardContent() {
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"interviews" | "analytics">("interviews");
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   useEffect(() => { fetchInterviews(); }, []);
 
@@ -78,6 +80,7 @@ function DashboardContent() {
   const top = interviews.filter((i) => (i.overallScore || 0) >= 8).length;
 
   return (
+    <>
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "40px 24px 80px" }}>
       {/* Header */}
       <div style={{ marginBottom: "32px" }}>
@@ -85,7 +88,15 @@ function DashboardContent() {
           <span style={{ color: "#ff51fa", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", borderLeft: "4px solid #ff51fa", paddingLeft: "8px" }}>03 // COMMAND_CENTER</span>
           <span style={{ background: "rgba(255,81,250,0.1)", color: "#ff51fa", padding: "2px 10px", fontSize: "10px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", border: "2px solid rgba(255,81,250,0.3)" }}>🔒 RECRUITER ONLY</span>
         </div>
-        <h1 style={{ fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 900, letterSpacing: "-0.05em", textTransform: "uppercase", marginTop: "8px", textShadow: "4px 4px 0px #bcff5f" }}>RECRUITER DASHBOARD</h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
+          <h1 style={{ fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 900, letterSpacing: "-0.05em", textTransform: "uppercase", marginTop: "8px", textShadow: "4px 4px 0px #bcff5f" }}>RECRUITER DASHBOARD</h1>
+          <button onClick={() => setInviteOpen(true)} style={{ padding: "12px 24px", background: "#bcff5f", color: "#000", fontWeight: 900, fontSize: "13px", textTransform: "uppercase", border: "4px solid #000", cursor: "pointer", boxShadow: "4px 4px 0px 0px #ff51fa", display: "flex", alignItems: "center", gap: "8px", fontFamily: "'Space Grotesk',sans-serif", whiteSpace: "nowrap" }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translate(2px,2px)"; e.currentTarget.style.boxShadow = "2px 2px 0px 0px #ff51fa"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "translate(0,0)"; e.currentTarget.style.boxShadow = "4px 4px 0px 0px #ff51fa"; }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "18px", fontVariationSettings: "'FILL' 1" }}>person_add</span>
+            INVITE CANDIDATE
+          </button>
+        </div>
       </div>
 
       {/* Tab Navigation */}
@@ -225,6 +236,10 @@ function DashboardContent() {
         </>
       )}
     </div>
+
+    {/* Invite Modal */}
+    <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
+    </>
   );
 }
 

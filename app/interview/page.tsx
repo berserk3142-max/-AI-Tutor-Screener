@@ -1,26 +1,109 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import AppShell from "@/components/layout/AppShell";
 
-export default function InterviewLobby() {
+function InterviewLobbyContent() {
   const { user, isLoaded } = useUser();
   const defaultName = isLoaded && user ? (user.fullName || user.firstName || "") : "";
   const [name, setName] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Use Clerk name as default if user hasn't typed anything
-  const displayName = name || defaultName;
+  // ─── Token Verification ───
+  const token = searchParams.get("token");
+  const [verifying, setVerifying] = useState(!!token);
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [tokenError, setTokenError] = useState("");
+  const [inviteData, setInviteData] = useState<{
+    candidateEmail?: string;
+    candidateName?: string;
+  }>({});
+
+  useEffect(() => {
+    if (!token) { setVerifying(false); return; }
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/invitations/verify?token=${token}`);
+        const data = await res.json();
+        if (data.valid) {
+          setTokenValid(true);
+          setInviteData({
+            candidateEmail: data.candidateEmail,
+            candidateName: data.candidateName,
+          });
+          if (data.candidateName) setName(data.candidateName);
+        } else {
+          setTokenValid(false);
+          setTokenError(data.error || "Invalid invitation");
+        }
+      } catch {
+        setTokenValid(false);
+        setTokenError("Failed to verify invitation");
+      } finally {
+        setVerifying(false);
+      }
+    })();
+  }, [token]);
+
+  const displayName = name || inviteData.candidateName || defaultName;
 
   const handleStart = () => {
     setIsStarting(true);
     const roomId = crypto.randomUUID().slice(0, 8);
     const candidateName = encodeURIComponent(displayName.trim() || "Anonymous");
-    router.push(`/interview/${roomId}?name=${candidateName}`);
+    const tokenParam = token ? `&token=${token}` : "";
+    router.push(`/interview/${roomId}?name=${candidateName}${tokenParam}`);
   };
+
+  // ─── No token = open access (keep backward compatible) ───
+  // ─── With token = must be valid ───
+
+  // Loading state while verifying
+  if (verifying) {
+    return (
+      <AppShell>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 64px)", gap: "20px" }}>
+          <div style={{ width: "80px", height: "80px", background: "#191919", border: "4px solid #bcff5f", display: "flex", alignItems: "center", justifyContent: "center", animation: "glow-pulse 2s ease-in-out infinite" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "36px", color: "#bcff5f", fontVariationSettings: "'FILL' 1" }}>vpn_key</span>
+          </div>
+          <div style={{ fontSize: "12px", color: "#bcff5f", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>VERIFYING INVITATION...</div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // Invalid token
+  if (token && tokenValid === false) {
+    return (
+      <AppShell>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 64px)", gap: "24px", padding: "40px" }}>
+          <div style={{ width: "100px", height: "100px", background: "#191919", border: "4px solid #ff7351", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "8px 8px 0px 0px #ff51fa" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "48px", color: "#ff7351", fontVariationSettings: "'FILL' 1" }}>link_off</span>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "11px", color: "#ff7351", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "8px" }}>
+              INVITATION_ERROR
+            </div>
+            <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.05em" }}>
+              INVALID <span style={{ color: "#ff7351" }}>INVITATION</span>
+            </h2>
+            <p style={{ color: "#757575", fontSize: "14px", marginTop: "12px", maxWidth: "400px" }}>
+              {tokenError}. The link may have expired, been used already, or is invalid. Please contact the recruiter for a new invitation.
+            </p>
+          </div>
+          <button onClick={() => router.push("/")} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>home</span>
+            RETURN HOME
+          </button>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -44,6 +127,20 @@ export default function InterviewLobby() {
           READY FOR YOUR <span style={{ color: "#bcff5f" }}>INTERVIEW</span>?
         </h1>
 
+        {/* Invitation badge */}
+        {token && tokenValid && (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
+            marginBottom: "20px", padding: "12px 20px", background: "rgba(0,255,255,0.05)",
+            border: "2px solid rgba(0,255,255,0.3)",
+          }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "#00ffff", fontVariationSettings: "'FILL' 1" }}>verified</span>
+            <span style={{ fontSize: "11px", color: "#00ffff", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+              VERIFIED INVITATION • {inviteData.candidateEmail}
+            </span>
+          </div>
+        )}
+
         {/* Show signed-in user info */}
         {isLoaded && user && (
           <div style={{
@@ -66,7 +163,7 @@ export default function InterviewLobby() {
         <div style={{ marginBottom: "24px" }}>
           <input
             type="text"
-            placeholder={defaultName ? `${defaultName.toUpperCase()} (AUTO-DETECTED)` : "ENTER YOUR NAME..."}
+            placeholder={displayName ? `${displayName.toUpperCase()} (AUTO-DETECTED)` : "ENTER YOUR NAME..."}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleStart()}
@@ -81,9 +178,9 @@ export default function InterviewLobby() {
             onFocus={(e) => { e.target.style.borderColor = "#bcff5f"; }}
             onBlur={(e) => { e.target.style.borderColor = "#484848"; }}
           />
-          {defaultName && !name && (
+          {displayName && !name && (
             <div style={{ fontSize: "10px", color: "#757575", marginTop: "6px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-              NAME AUTO-FILLED FROM YOUR ACCOUNT • OVERRIDE ABOVE
+              NAME AUTO-FILLED • OVERRIDE ABOVE
             </div>
           )}
         </div>
@@ -129,3 +226,16 @@ export default function InterviewLobby() {
   );
 }
 
+export default function InterviewLobby() {
+  return (
+    <Suspense fallback={
+      <AppShell>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 64px)" }}>
+          <div style={{ fontSize: "12px", color: "#757575", textTransform: "uppercase" }}>LOADING...</div>
+        </div>
+      </AppShell>
+    }>
+      <InterviewLobbyContent />
+    </Suspense>
+  );
+}
