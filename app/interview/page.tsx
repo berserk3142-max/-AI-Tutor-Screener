@@ -2,20 +2,28 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import AppShell from "@/components/layout/AppShell";
 
 export default function InterviewLobby() {
+  const { user, isLoaded } = useUser();
+  const defaultName = isLoaded && user ? (user.fullName || user.firstName || "") : "";
   const [name, setName] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const router = useRouter();
 
+  // Use Clerk name as default if user hasn't typed anything
+  const displayName = name || defaultName;
+
   const handleStart = () => {
     setIsStarting(true);
     const roomId = crypto.randomUUID().slice(0, 8);
-    const candidateName = encodeURIComponent(name.trim() || "Anonymous");
+    const candidateName = encodeURIComponent(displayName.trim() || "Anonymous");
     router.push(`/interview/${roomId}?name=${candidateName}`);
   };
 
   return (
+    <AppShell>
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 64px)", padding: "40px 20px", textAlign: "center", position: "relative" }}>
       {/* Ambient glow */}
       <div style={{ position: "absolute", width: "500px", height: "500px", background: "radial-gradient(circle, rgba(188,255,95,0.08), transparent 70%)", borderRadius: "50%", filter: "blur(100px)", pointerEvents: "none" }} />
@@ -36,6 +44,20 @@ export default function InterviewLobby() {
           READY FOR YOUR <span style={{ color: "#bcff5f" }}>INTERVIEW</span>?
         </h1>
 
+        {/* Show signed-in user info */}
+        {isLoaded && user && (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "12px",
+            marginBottom: "24px", padding: "12px 20px", background: "rgba(188,255,95,0.05)",
+            border: "2px solid rgba(188,255,95,0.15)",
+          }}>
+            <div style={{ width: "8px", height: "8px", background: "#bcff5f", animation: "glow-pulse 2s ease-in-out infinite" }} />
+            <span style={{ fontSize: "12px", color: "#bcff5f", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+              AUTHENTICATED AS: {user.fullName || user.primaryEmailAddress?.emailAddress || "USER"}
+            </span>
+          </div>
+        )}
+
         <p style={{ color: "#ababab", fontSize: "16px", lineHeight: 1.7, marginBottom: "40px", maxWidth: "480px", margin: "0 auto 40px" }}>
           Nova will evaluate your communication and teaching skills through a natural voice conversation. Speak clearly — this is a voice-first experience.
         </p>
@@ -44,7 +66,7 @@ export default function InterviewLobby() {
         <div style={{ marginBottom: "24px" }}>
           <input
             type="text"
-            placeholder="ENTER YOUR NAME..."
+            placeholder={defaultName ? `${defaultName.toUpperCase()} (AUTO-DETECTED)` : "ENTER YOUR NAME..."}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleStart()}
@@ -59,6 +81,11 @@ export default function InterviewLobby() {
             onFocus={(e) => { e.target.style.borderColor = "#bcff5f"; }}
             onBlur={(e) => { e.target.style.borderColor = "#484848"; }}
           />
+          {defaultName && !name && (
+            <div style={{ fontSize: "10px", color: "#757575", marginTop: "6px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              NAME AUTO-FILLED FROM YOUR ACCOUNT • OVERRIDE ABOVE
+            </div>
+          )}
         </div>
 
         {/* Start button */}
@@ -98,5 +125,7 @@ export default function InterviewLobby() {
         </div>
       </div>
     </div>
+    </AppShell>
   );
 }
+
