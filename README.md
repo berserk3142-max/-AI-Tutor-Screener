@@ -1,378 +1,431 @@
-# 🤖 NovaAI — Real-Time AI Voice Interviewer
+<div align="center">
 
-> **A production-grade, voice-first AI interviewer that conducts live interviews, captures real-time transcripts, and generates AI-powered evaluation reports — all through natural conversation.**
+# 🤖 NovaAI
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js)](https://nextjs.org)
-[![Vapi](https://img.shields.io/badge/Vapi_AI-Voice_Engine-blueviolet)](https://vapi.ai)
-[![Gemini](https://img.shields.io/badge/Gemini_2.0-Evaluation-blue?logo=google)](https://ai.google.dev)
-[![PostgreSQL](https://img.shields.io/badge/Neon-PostgreSQL-green?logo=postgresql)](https://neon.tech)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://typescriptlang.org)
+### **Real-Time AI Voice Interviewer • Evaluation Engine • Recruiter Platform**
+
+> _Conduct live voice interviews, generate AI-powered evaluations, export PDF reports, and manage candidates — all from one platform._
+
+[![Next.js](https://img.shields.io/badge/Next.js_16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![Clerk](https://img.shields.io/badge/Clerk_Auth-6C47FF?style=for-the-badge&logo=clerk)](https://clerk.com)
+[![Vapi](https://img.shields.io/badge/Vapi_AI-Voice-blueviolet?style=for-the-badge)](https://vapi.ai)
+[![Gemini](https://img.shields.io/badge/Gemini_2.0-Evaluation-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev)
+[![Neon](https://img.shields.io/badge/Neon-PostgreSQL-00E599?style=for-the-badge&logo=postgresql)](https://neon.tech)
+[![Resend](https://img.shields.io/badge/Resend-Email-000?style=for-the-badge)](https://resend.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript)](https://typescriptlang.org)
+
+---
+
+**🎤 Voice-First Interviews** · **📊 Analytics Dashboard** · **📋 PDF Reports** · **📧 Email Notifications** · **🏷️ Recruiter Tags** · **🎙️ Audio Playback**
+
+</div>
 
 ---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Live Demo](#live-demo)
-- [Architecture](#architecture)
-- [System Flow](#system-flow)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Features](#features)
-- [Database Schema](#database-schema)
-- [API Endpoints](#api-endpoints)
-- [Evaluation Dimensions](#evaluation-dimensions)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Deployment](#deployment)
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [Interview Flow](#-interview-flow)
+- [Voice Pipeline](#-voice-pipeline)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Features](#-features)
+- [Database Schema](#-database-schema)
+- [API Endpoints](#-api-endpoints)
+- [Getting Started](#-getting-started)
+- [Environment Variables](#-environment-variables)
+- [Deployment](#-deployment)
+- [Design System](#-design-system)
 
 ---
 
-## Overview
+## 🌟 Overview
 
-**NovaAI** is a next-generation interview platform built for Cuemath to screen tutor candidates. Instead of traditional text-based forms, candidates have a **real-time voice conversation** with an AI interviewer named **Nova**. The system:
+**NovaAI** is a next-generation AI interview platform. Candidates have a **real-time voice conversation** with an AI interviewer named **Nova**, powered by Vapi AI + GPT-4o. After the interview, **Gemini 2.0 Flash** evaluates the transcript across 5 skill dimensions, generates a detailed scorecard, and emails the results — all automatically.
 
-1. **Conducts** a structured 6-question voice interview using Vapi AI
-2. **Transcribes** the conversation in real-time using Deepgram
-3. **Evaluates** the candidate's performance using Google Gemini AI
-4. **Stores** results in a PostgreSQL database
-5. **Displays** detailed scorecards on a recruiter dashboard
+### What Makes NovaAI Different
+
+| Traditional Screening | NovaAI |
+|:---:|:---:|
+| 📝 Written forms | 🎤 Live voice conversation |
+| ⏳ Manual review | 🧠 AI-powered instant evaluation |
+| 📊 Spreadsheets | 📈 Analytics dashboard with charts |
+| 📄 No reports | 📋 Branded PDF scorecards |
+| 📧 Manual emails | ✉️ Auto-email results to candidates |
+| 🔇 No recordings | 🎙️ Full audio playback |
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
-### High-Level System Architecture
+### System Architecture
 
+```mermaid
+graph TB
+    subgraph Client["🌐 CLIENT (Browser)"]
+        LP["🏠 Landing Page"]
+        IL["📋 Interview Lobby"]
+        IR["🎤 Interview Room"]
+        RP["📊 Results Page"]
+        DB_PAGE["📈 Dashboard"]
+        
+        LP --> IL --> IR --> RP
+        DB_PAGE
+        
+        subgraph State["State Management"]
+            ZS["Zustand Store"]
+            VH["useVoice Hook"]
+            AR["useAudioRecorder"]
+        end
+    end
+
+    subgraph VapiCloud["☁️ VAPI AI CLOUD"]
+        GPT["🧠 OpenAI GPT-4o\n(Brain)"]
+        DG["🎧 Deepgram Nova-2\n(Speech-to-Text)"]
+        EL["🔊 ElevenLabs\n(Text-to-Speech)"]
+    end
+
+    subgraph Backend["⚙️ NEXT.JS API ROUTES"]
+        EVAL["/api/evaluate\n(Gemini AI)"]
+        INT["/api/interviews\n(CRUD)"]
+        TAGS["/api/interviews/id/tags\n(Recruiter Tools)"]
+        AUDIO["/api/upload-audio\n(Recording Storage)"]
+    end
+    
+    subgraph Services["🔌 SERVICES"]
+        GEMINI["💎 Gemini 2.0 Flash\n(Evaluation Engine)"]
+        RESEND["📧 Resend\n(Email Service)"]
+        CLERK["🔐 Clerk\n(Authentication)"]
+    end
+
+    subgraph Database["💾 DATABASE"]
+        NEON["🐘 Neon PostgreSQL\n(Drizzle ORM)"]
+    end
+
+    IR <-->|"WebRTC"| VapiCloud
+    IR --> EVAL
+    EVAL --> GEMINI
+    EVAL --> RESEND
+    EVAL --> NEON
+    INT --> NEON
+    TAGS --> NEON
+    AUDIO --> NEON
+    Client <-->|"Auth"| CLERK
+
+    style Client fill:#0e0e0e,stroke:#bcff5f,stroke-width:3px,color:#fff
+    style VapiCloud fill:#1a1a2e,stroke:#00ffff,stroke-width:3px,color:#fff
+    style Backend fill:#0e0e0e,stroke:#ff51fa,stroke-width:3px,color:#fff
+    style Services fill:#1a1a2e,stroke:#bcff5f,stroke-width:3px,color:#fff
+    style Database fill:#0e0e0e,stroke:#00ffff,stroke-width:3px,color:#fff
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CLIENT (Browser)                            │
-│                                                                     │
-│  ┌──────────┐   ┌──────────────┐   ┌────────────┐   ┌───────────┐ │
-│  │  Landing  │──▶│  Interview   │──▶│  Interview │──▶│  Results   │ │
-│  │  Page (/) │   │  Lobby       │   │  Room      │   │  Page     │ │
-│  └──────────┘   └──────────────┘   └─────┬──────┘   └───────────┘ │
-│                                          │                         │
-│                              ┌───────────┴───────────┐             │
-│                              │   Zustand Store        │             │
-│                              │   (Interview State)    │             │
-│                              └───────────┬───────────┘             │
-│                                          │                         │
-│                              ┌───────────┴───────────┐             │
-│                              │   useVoice Hook        │             │
-│                              │   (Vapi SDK Client)    │             │
-│                              └───────────┬───────────┘             │
-└──────────────────────────────────────────┼─────────────────────────┘
-                                           │
-                              WebRTC + Events (managed by Vapi)
-                                           │
-                    ┌──────────────────────┼──────────────────────┐
-                    │              VAPI AI CLOUD                  │
-                    │                                              │
-                    │   ┌──────────┐  ┌─────────┐  ┌──────────┐  │
-                    │   │ OpenAI   │  │Deepgram │  │ElevenLabs│  │
-                    │   │ GPT-4o   │  │ Nova-2  │  │  TTS     │  │
-                    │   │ (Brain)  │  │ (STT)   │  │ (Voice)  │  │
-                    │   └──────────┘  └─────────┘  └──────────┘  │
-                    └─────────────────────────────────────────────┘
-
-                    ┌─────────────────────────────────────────────┐
-                    │           NEXT.JS API ROUTES                │
-                    │                                              │
-                    │   ┌─────────────────┐  ┌────────────────┐   │
-                    │   │ /api/evaluate    │  │ /api/interviews│   │
-                    │   │ (Gemini AI)      │  │ (CRUD)         │   │
-                    │   └────────┬────────┘  └───────┬────────┘   │
-                    │            │                    │            │
-                    │            ▼                    ▼            │
-                    │   ┌─────────────────────────────────────┐   │
-                    │   │       Drizzle ORM                    │   │
-                    │   │       (Type-safe queries)            │   │
-                    │   └────────────────┬────────────────────┘   │
-                    └────────────────────┼────────────────────────┘
-                                         │
-                              ┌──────────┴──────────┐
-                              │   Neon PostgreSQL    │
-                              │   (Serverless DB)    │
-                              └─────────────────────┘
-```
 
 ---
 
-## System Flow
+## 🔄 Interview Flow
 
 ### Complete Interview Lifecycle
 
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────────┐
-│   Landing   │────▶│   Interview  │────▶│   Interview      │
-│   Page      │     │   Lobby      │     │   Room           │
-│   (/)       │     │ (/interview) │     │ (/interview/id)  │
-└─────────────┘     └──────┬───────┘     └────────┬─────────┘
-                           │                      │
-                    User enters name        Auto-connects to
-                    & clicks START          Vapi AI via WebRTC
-                           │                      │
-                           ▼                      ▼
-                    ┌──────────────┐     ┌──────────────────┐
-                    │ Generate     │     │  LIVE INTERVIEW   │
-                    │ Room ID      │     │                   │
-                    │ (UUID)       │     │  Nova asks 6 Qs   │
-                    └──────────────┘     │  Real-time STT    │
-                                        │  Live transcript   │
-                                        │  Timer + Q count   │
-                                        └────────┬─────────┘
-                                                 │
-                                          User clicks
-                                          "End Interview"
-                                                 │
-                                                 ▼
-                                        ┌──────────────────┐
-                                        │  EVALUATION       │
-                                        │                   │
-                                        │  Transcript ──▶   │
-                                        │  Gemini 2.0 Flash │
-                                        │  ──▶ JSON Scores  │
-                                        └────────┬─────────┘
-                                                 │
-                                                 ▼
-                                        ┌──────────────────┐
-                                        │  SAVE TO DB       │
-                                        │                   │
-                                        │  Drizzle ORM ──▶  │
-                                        │  Neon PostgreSQL   │
-                                        └────────┬─────────┘
-                                                 │
-                                                 ▼
-                                        ┌──────────────────┐
-                                        │  RESULTS PAGE     │
-                                        │  (/results/id)    │
-                                        │                   │
-                                        │  • Overall Score   │
-                                        │  • 5 Dimensions    │
-                                        │  • Strengths       │
-                                        │  • Improvements    │
-                                        │  • Evidence        │
-                                        │  • Full Transcript  │
-                                        └──────────────────┘
-```
+```mermaid
+flowchart TD
+    A["🏠 Landing Page\n(Meet Nova)"] -->|"Click START"| B["🔐 Clerk Auth\n(Sign In / Sign Up)"]
+    B -->|"Authenticated"| C["📋 Interview Lobby\n(Enter Name)"]
+    C -->|"Click BEGIN"| D["🔗 Connecting...\n(Vapi WebRTC)"]
+    D -->|"Connected"| E["🎤 LIVE INTERVIEW\n━━━━━━━━━━━━━\n• Nova asks 6 questions\n• Real-time transcript\n• Audio recording\n• Timer + Q counter"]
+    E -->|"Click END"| F["⏳ Evaluating...\n(Gemini AI)"]
+    F --> G{"Gemini\nAvailable?"}
+    G -->|"Yes"| H["🧠 AI Evaluation\n(5 dimensions scored)"]
+    G -->|"No"| I["📐 Fallback\n(Heuristic scoring)"]
+    H --> J["💾 Save to DB\n(Neon PostgreSQL)"]
+    I --> J
+    J --> K["📧 Email Results\n(via Resend)"]
+    J --> L["🎙️ Upload Audio\n(Recording saved)"]
+    K --> M["📊 RESULTS PAGE\n━━━━━━━━━━━━━\n• Overall Score + Grade\n• 5 Dimension Scores\n• Strengths & Improvements\n• Evidence Quotes\n• Audio Playback\n• PDF Download"]
+    L --> M
+    M --> N["📈 Recruiter Dashboard\n━━━━━━━━━━━━━━━━\n• Analytics Charts\n• Tag & Filter Candidates\n• Private Notes\n• Export PDFs"]
 
-### Voice Pipeline (Inside Vapi)
-
-```
-   Candidate's Mic                              Speaker Output
-        │                                              ▲
-        ▼                                              │
-  ┌───────────┐     ┌───────────┐     ┌───────────┐   │
-  │  WebRTC   │────▶│ Deepgram  │────▶│  OpenAI   │───┤
-  │  Audio    │     │  Nova-2   │     │  GPT-4o   │   │
-  │  Stream   │     │  (STT)    │     │  (LLM)    │   │
-  └───────────┘     └───────────┘     └─────┬─────┘   │
-                                            │         │
-                                            ▼         │
-                                      ┌───────────┐   │
-                                      │ ElevenLabs│───┘
-                                      │   (TTS)   │
-                                      └───────────┘
-
-  ──────────────── Events Flow ────────────────────────
-
-  Vapi SDK ──▶ transcript (partial/final) ──▶ Zustand Store
-           ──▶ speech-start / speech-end   ──▶ UI Updates
-           ──▶ call-start / call-end       ──▶ Status Changes
+    style A fill:#191919,stroke:#bcff5f,stroke-width:2px,color:#fff
+    style E fill:#191919,stroke:#00ffff,stroke-width:3px,color:#fff
+    style H fill:#191919,stroke:#ff51fa,stroke-width:2px,color:#fff
+    style M fill:#191919,stroke:#bcff5f,stroke-width:3px,color:#fff
+    style N fill:#191919,stroke:#ff51fa,stroke-width:3px,color:#fff
 ```
 
 ---
 
-## Tech Stack
+## 🔊 Voice Pipeline
+
+### How Nova Talks (Inside Vapi)
+
+```mermaid
+flowchart LR
+    MIC["🎙️ Candidate\nMicrophone"] -->|"WebRTC\nAudio Stream"| DG["🎧 Deepgram\nNova-2\n(STT)"]
+    DG -->|"Text"| GPT["🧠 OpenAI\nGPT-4o\n(LLM)"]
+    GPT -->|"Response"| EL["🔊 ElevenLabs\n(TTS)"]
+    EL -->|"Audio"| SPK["🔈 Speaker\nOutput"]
+    
+    DG -.->|"transcript events"| UI["📝 Live\nTranscript UI"]
+    GPT -.->|"speech-start/end"| VIS["📊 Audio\nVisualizer"]
+
+    style MIC fill:#191919,stroke:#00ffff,stroke-width:2px,color:#fff
+    style DG fill:#1a1a2e,stroke:#bcff5f,stroke-width:2px,color:#fff
+    style GPT fill:#1a1a2e,stroke:#ff51fa,stroke-width:2px,color:#fff
+    style EL fill:#1a1a2e,stroke:#bcff5f,stroke-width:2px,color:#fff
+    style SPK fill:#191919,stroke:#00ffff,stroke-width:2px,color:#fff
+```
+
+---
+
+## 🧠 Evaluation Engine
+
+### How Gemini Scores Candidates
+
+```mermaid
+flowchart TD
+    T["📝 Full Interview Transcript"] --> G["🧠 Gemini 2.0 Flash"]
+    
+    G --> C["💎 Clarity\n(1-10)\n━━━━━━━━\nPrecision\nExamples\nStructure"]
+    G --> P["🌱 Patience\n(1-10)\n━━━━━━━━\nCalm under confusion\nWait time\nEncouragement"]
+    G --> F["🗣️ Fluency\n(1-10)\n━━━━━━━━\nConfident speech\nNatural flow\nNo filler words"]
+    G --> W["🤗 Warmth\n(1-10)\n━━━━━━━━\nFriendly tone\nApproachable\nSafe space"]
+    G --> S["✨ Simplicity\n(1-10)\n━━━━━━━━\nBreaks complexity\nAvoids jargon\nDigestible"]
+    
+    C & P & F & W & S --> O["📊 Overall Score\n(Weighted Average)\nFavors Clarity & Patience"]
+    O --> R["📋 Full Report\n━━━━━━━━━━━━\n• Summary\n• Strengths\n• Improvements\n• Evidence quotes"]
+
+    style T fill:#191919,stroke:#484848,stroke-width:2px,color:#fff
+    style G fill:#191919,stroke:#ff51fa,stroke-width:3px,color:#fff
+    style O fill:#191919,stroke:#bcff5f,stroke-width:3px,color:#fff
+    style R fill:#191919,stroke:#00ffff,stroke-width:2px,color:#fff
+```
+
+---
+
+## ⚙️ Tech Stack
 
 | Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Framework** | Next.js 16.2 (App Router) | Full-stack React framework with server-side API routes |
-| **Language** | TypeScript 5.x | Type-safe development |
+|:------|:-----------|:--------|
+| **Framework** | Next.js 16.2 (Turbopack) | Full-stack React with App Router |
+| **Auth** | Clerk | Sign-in/Sign-up, RBAC, route protection |
 | **Voice AI** | Vapi AI (`@vapi-ai/web`) | Real-time voice conversations via WebRTC |
-| **LLM (Interview)** | OpenAI GPT-4o (via Vapi) | Powers Nova's conversational intelligence |
+| **LLM (Interview)** | OpenAI GPT-4o (via Vapi) | Nova's conversational intelligence |
 | **Speech-to-Text** | Deepgram Nova-2 (via Vapi) | Real-time audio transcription |
 | **Text-to-Speech** | ElevenLabs (via Vapi) | Natural-sounding AI voice |
-| **LLM (Evaluation)** | Google Gemini 2.0 Flash | Post-interview transcript analysis & scoring |
-| **Database** | Neon PostgreSQL (Serverless) | Persistent storage for interviews & scores |
-| **ORM** | Drizzle ORM | Type-safe database queries |
-| **State Management** | Zustand | Lightweight global state for interview data |
-| **Styling** | Vanilla CSS (Neo-Brutalist) | Custom design system with hard shadows & grid patterns |
+| **LLM (Evaluation)** | Google Gemini 2.0 Flash | Post-interview transcript analysis |
+| **Database** | Neon PostgreSQL (Serverless) | Interview storage with Drizzle ORM |
+| **Email** | Resend | Automated evaluation result emails |
+| **Charts** | Recharts | Analytics dashboard visualizations |
+| **PDF** | jsPDF + jspdf-autotable | Branded PDF report generation |
+| **Toasts** | Sonner | Real-time notification system |
+| **State** | Zustand | Lightweight global state management |
+| **Styling** | Vanilla CSS (Neo-Brutalist) | Custom design system |
 | **Fonts** | Space Grotesk + Material Symbols | Typography & iconography |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
+
+```mermaid
+graph LR
+    subgraph Root["📦 ai-tutor-screener"]
+        subgraph App["app/"]
+            AUTH["(auth)/\nsign-in, sign-up"]
+            API["api/\nevaluate, interviews\ntags, upload-audio"]
+            PAGES["dashboard/\ninterview/\nresults/\nprofile/"]
+        end
+        
+        subgraph Comp["components/"]
+            AUTH_C["auth/\nRoleGuard"]
+            DASH_C["dashboard/\nAnalyticsPanel\nTagsNotesPanel"]
+            INT_C["interview/\nAudioPlayer"]
+            LAYOUT_C["layout/\nAppShell"]
+            UI_C["ui/\nToaster"]
+            SHARED["Navbar, Footer\nScoreCard\nTranscriptDisplay"]
+        end
+        
+        subgraph Core["Core"]
+            HOOKS["hooks/\nuseVoice\nuseAudioRecorder"]
+            STORE["store/\nuseInterviewStore"]
+            LIB["lib/\npdf, email\nutils, auth"]
+            DB["db/\nschema, index"]
+            TYPES["types/\ninterview, user"]
+        end
+    end
+
+    style Root fill:#0e0e0e,stroke:#bcff5f,stroke-width:2px,color:#fff
+    style App fill:#191919,stroke:#00ffff,stroke-width:2px,color:#fff
+    style Comp fill:#191919,stroke:#ff51fa,stroke-width:2px,color:#fff
+    style Core fill:#191919,stroke:#bcff5f,stroke-width:2px,color:#fff
+```
+
+<details>
+<summary><b>📂 Full Directory Tree</b></summary>
 
 ```
 ai-tutor-screener/
-├── app/                          # Next.js App Router
-│   ├── layout.tsx                # Root layout (Navbar + Footer)
-│   ├── page.tsx                  # Landing page (Meet Nova)
-│   ├── globals.css               # Design system & animations
-│   ├── interview/
-│   │   ├── page.tsx              # Interview lobby (enter name)
-│   │   └── [roomId]/
-│   │       └── page.tsx          # Live interview room (Meet-style UI)
-│   ├── results/
-│   │   └── [id]/
-│   │       └── page.tsx          # Individual result detail page
-│   ├── dashboard/
-│   │   └── page.tsx              # Recruiter dashboard (all interviews)
-│   └── api/
-│       ├── evaluate/
-│       │   └── route.ts          # POST — Gemini evaluation endpoint
-│       ├── interviews/
-│       │   ├── route.ts          # GET — List all interviews
-│       │   └── [id]/
-│       │       └── route.ts      # GET — Single interview detail
-│       ├── realtime-token/
-│       │   └── route.ts          # (Legacy) OpenAI realtime session
-│       └── tts/
-│           └── route.ts          # (Legacy) ElevenLabs TTS
+├── app/
+│   ├── (auth)/
+│   │   ├── layout.tsx                 # Auth pages layout
+│   │   ├── sign-in/[[...sign-in]]/    # Clerk sign-in page
+│   │   └── sign-up/[[...sign-up]]/    # Clerk sign-up page
+│   ├── api/
+│   │   ├── evaluate/route.ts          # POST — Gemini evaluation + email
+│   │   ├── interviews/
+│   │   │   ├── route.ts              # GET — List interviews
+│   │   │   └── [id]/
+│   │   │       ├── route.ts          # GET — Interview detail
+│   │   │       └── tags/route.ts     # PATCH — Update tags/notes
+│   │   └── upload-audio/route.ts     # POST — Audio upload
+│   ├── dashboard/page.tsx            # Recruiter dashboard + analytics
+│   ├── interview/page.tsx            # Interview lobby
+│   ├── results/[id]/page.tsx         # Results + PDF + audio + tags
+│   ├── profile/page.tsx              # User profile
+│   ├── layout.tsx                    # Root layout (Clerk + Toaster)
+│   ├── page.tsx                      # Landing page
+│   └── globals.css                   # Design system
 │
 ├── components/
-│   ├── Navbar.tsx                # Fixed top navigation bar
-│   ├── Footer.tsx                # Site footer
-│   ├── InterviewRoom.tsx         # (Legacy) Interview room component
-│   ├── AudioVisualizer.tsx       # Sound wave animation bars
-│   ├── TranscriptDisplay.tsx     # Live transcript message bubbles
-│   ├── ScoreCard.tsx             # Animated score bar with label
-│   └── ResultsPanel.tsx          # Full evaluation results view
+│   ├── auth/RoleGuard.tsx            # Role-based access control
+│   ├── dashboard/
+│   │   ├── AnalyticsPanel.tsx        # Charts (bar, radar, line, pie)
+│   │   └── TagsNotesPanel.tsx        # Tag selector + notes
+│   ├── interview/AudioPlayer.tsx     # Custom audio playback
+│   ├── layout/AppShell.tsx           # Consistent page wrapper
+│   ├── ui/Toaster.tsx                # Toast notifications
+│   ├── Navbar.tsx                    # Navigation with auth
+│   ├── Footer.tsx                    # Site footer
+│   ├── ScoreCard.tsx                 # Score bar component
+│   └── TranscriptDisplay.tsx         # Chat-style transcript
 │
 ├── hooks/
-│   └── useVoice.ts               # Core Vapi integration hook
-│                                   (start/end/mute/interrupt)
+│   ├── useVoice.ts                   # Vapi SDK integration
+│   └── useAudioRecorder.ts           # MediaRecorder hook
 │
-├── store/
-│   └── useInterviewStore.ts      # Zustand global state
-│                                   (status, transcript, scores)
+├── store/useInterviewStore.ts        # Zustand global state
+├── lib/
+│   ├── pdf.ts                        # PDF generation (jsPDF)
+│   ├── email.ts                      # Resend email sender
+│   ├── email-template.ts             # HTML email template
+│   ├── auth.ts                       # Auth utilities
+│   ├── utils.ts                      # Formatting helpers
+│   └── constants.ts                  # App constants
 │
 ├── db/
-│   ├── index.ts                  # Drizzle + pg Pool connection
-│   └── schema.ts                 # interviews table schema
+│   ├── index.ts                      # Drizzle + Neon connection
+│   └── schema.ts                     # Database schema
 │
-├── drizzle.config.ts             # Drizzle Kit migration config
-├── package.json                  # Dependencies & scripts
-├── tsconfig.json                 # TypeScript configuration
-├── next.config.ts                # Next.js configuration
-└── .env.local                    # Environment variables (secrets)
+├── types/                            # TypeScript interfaces
+├── middleware.ts                      # Clerk route protection
+└── drizzle.config.ts                 # Drizzle Kit config
 ```
+
+</details>
 
 ---
 
-## Features
+## ✨ Features
+
+### 🔐 Authentication & RBAC
+- Clerk-powered sign-in/sign-up with Google & email
+- Role-based access (Recruiter vs Candidate)
+- Protected routes via middleware
+- User-scoped interview data
 
 ### 🎤 Voice-First Interview
 - Real-time WebRTC voice conversation powered by Vapi AI
 - GPT-4o drives Nova's conversational intelligence
-- ElevenLabs provides natural-sounding speech synthesis
-- Deepgram Nova-2 handles speech-to-text in real-time
-- Voice Activity Detection (VAD) for natural turn-taking
+- ElevenLabs natural speech synthesis
+- Deepgram Nova-2 real-time transcription
+- Voice Activity Detection for natural turn-taking
 
-### 📝 Live Transcript
-- Real-time partial and final transcript display
-- Color-coded messages (green for Nova, cyan for candidate)
-- Auto-scrolling sidebar with message count
+### 🎙️ Audio Recording & Playback
+- Automatic recording via MediaRecorder API
+- Custom audio player with seek & speed controls (0.5x–2x)
+- Recordings saved and available on results page
 
-### 🧠 AI Evaluation (5 Dimensions)
-After the interview ends, the full transcript is sent to **Gemini 2.0 Flash** which evaluates across:
+### 📊 Analytics Dashboard
+- **Score Distribution** — Bar chart histogram (1–10)
+- **Dimension Radar** — Average Clarity, Patience, Fluency, Warmth, Simplicity
+- **Score Trend** — Line chart of last 20 interviews
+- **Pass/Fail Ratio** — Pie chart with pass rate percentage
+- 5 stat cards: Total, Average, Top Rated, This Week, Avg Duration
 
-| Dimension | What It Measures |
-|-----------|-----------------|
-| 💎 **Clarity** | How clearly concepts are explained, use of examples |
-| 🌱 **Patience** | Handling confusion and slow learners |
-| 🗣️ **Fluency** | Natural, confident communication without filler words |
-| 🤗 **Warmth** | Approachability, encouragement, safe learning environment |
-| ✨ **Simplicity** | Breaking down complex topics, avoiding jargon |
+### 📋 PDF Report Export
+- One-click branded PDF download from any results page
+- Dark-themed NovaAI design with score tables
+- Includes summary, strengths, improvements, and evidence
+- Also available per-row on the dashboard
 
-Each dimension is scored **1-10** with an overall weighted score.
+### 📧 Email Notifications
+- Auto-sends styled HTML evaluation email after interview
+- Dark-themed template matching NovaAI's design
+- Score breakdown, summary, strengths, and "View Report" link
+- Powered by Resend (fire-and-forget, non-blocking)
 
-### 📊 Recruiter Dashboard
-- View all completed interviews
-- Filter by score range (All / 8+ / 5-7 / <5)
-- Search candidates by name
-- Quick stats: total interviews, average score, top performers
-- Click any row to see detailed results
+### 🏷️ Tags + Recruiter Notes
+- 5 predefined tags: `SHORTLISTED` `REJECTED` `ON_HOLD` `NEEDS_REVIEW` `TOP_PICK`
+- Private recruiter notes per interview
+- Tag filter dropdown on dashboard
+- Color-coded tag badges on interview cards
 
-### 📋 Detailed Results Page
-- Large overall score display with letter grade (A+ to D)
-- Animated score bars for each dimension
-- AI-generated summary, strengths, and areas for improvement
-- Direct evidence quotes from the transcript
-- Expandable full transcript
+### 🔔 Toast Notifications
+- Real-time feedback for all actions
+- Neo-brutalist styled with Sonner
+- PDF export, tag saves, errors — all notified
 
-### 🛡️ Reliability
+### 🛡️ Evaluation Reliability
 - Multi-model Gemini fallback (2.0-flash → 2.0-flash-lite → 1.5-flash → gemini-pro)
-- Local heuristic evaluation when all API models are rate-limited
-- Automatic retry on transient failures
+- Local heuristic evaluation when all APIs are rate-limited
+- Candidates always get a result, never left hanging
 
 ---
 
-## Database Schema
+## 💾 Database Schema
 
-```sql
-CREATE TABLE interviews (
-  id               TEXT PRIMARY KEY,
-  candidate_name   TEXT DEFAULT 'Anonymous',
-  transcript       TEXT,
-  clarity          INTEGER,
-  patience         INTEGER,
-  fluency          INTEGER,
-  warmth           INTEGER,
-  simplicity       INTEGER,
-  overall_score    INTEGER,
-  summary          TEXT,
-  evidence         JSONB,        -- string[]
-  strengths        JSONB,        -- string[]
-  improvements     JSONB,        -- string[]
-  duration_seconds INTEGER,
-  question_count   INTEGER,
-  status           TEXT DEFAULT 'completed',
-  created_at       TIMESTAMP DEFAULT NOW()
-);
-```
-
-### Entity Relationship
-
-```
-┌────────────────────────────────────────────┐
-│              interviews                     │
-├────────────────────────────────────────────┤
-│ PK │ id              │ TEXT (UUID)          │
-│    │ candidate_name  │ TEXT                 │
-│    │ transcript      │ TEXT (full conv.)    │
-│    │ clarity         │ INTEGER (1-10)       │
-│    │ patience        │ INTEGER (1-10)       │
-│    │ fluency         │ INTEGER (1-10)       │
-│    │ warmth          │ INTEGER (1-10)       │
-│    │ simplicity      │ INTEGER (1-10)       │
-│    │ overall_score   │ INTEGER (1-10)       │
-│    │ summary         │ TEXT                 │
-│    │ evidence        │ JSONB (string[])     │
-│    │ strengths       │ JSONB (string[])     │
-│    │ improvements    │ JSONB (string[])     │
-│    │ duration_seconds│ INTEGER              │
-│    │ question_count  │ INTEGER              │
-│    │ status          │ TEXT                 │
-│    │ created_at      │ TIMESTAMP            │
-└────────────────────────────────────────────┘
+```mermaid
+erDiagram
+    INTERVIEWS {
+        text id PK "UUID"
+        text user_id "Clerk User ID"
+        text candidate_name "Default: Anonymous"
+        text transcript "Full conversation"
+        int clarity "1-10"
+        int patience "1-10"
+        int fluency "1-10"
+        int warmth "1-10"
+        int simplicity "1-10"
+        int overall_score "1-10"
+        text summary "AI-generated summary"
+        jsonb evidence "string[] — quotes"
+        jsonb strengths "string[] — strengths"
+        jsonb improvements "string[] — areas to improve"
+        int duration_seconds "Interview length"
+        int question_count "Questions asked"
+        text status "completed"
+        jsonb tags "string[] — recruiter tags"
+        text recruiter_notes "Private notes"
+        text tagged_by "Recruiter user ID"
+        timestamp tagged_at "When tagged"
+        text audio_url "Recording URL/data"
+        timestamp created_at "Auto-generated"
+    }
 ```
 
 ---
 
-## API Endpoints
+## 🔌 API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/evaluate` | Sends transcript to Gemini AI, saves scored results to DB |
-| `GET` | `/api/interviews` | Returns all interviews (sorted by newest first) |
-| `GET` | `/api/interviews/[id]` | Returns a single interview's full details |
+| Method | Endpoint | Auth | Description |
+|:------:|:---------|:----:|:------------|
+| `POST` | `/api/evaluate` | ✅ | Evaluate transcript with Gemini → save → email results |
+| `GET` | `/api/interviews` | ✅ | List all interviews (recruiter sees all, users see own) |
+| `GET` | `/api/interviews/[id]` | ✅ | Get single interview full details |
+| `PATCH` | `/api/interviews/[id]/tags` | 🔒 Recruiter | Update tags and recruiter notes |
+| `POST` | `/api/upload-audio` | ✅ | Upload interview audio recording |
 
-### POST `/api/evaluate`
+### `POST /api/evaluate` — Example
 
-**Request Body:**
+**Request:**
 ```json
 {
   "transcript": "Interviewer (Nova): Hi there!...\n\nCandidate: Hello...",
@@ -382,10 +435,10 @@ CREATE TABLE interviews (
 }
 ```
 
-**Response (200):**
+**Response:**
 ```json
 {
-  "id": "uuid-of-saved-interview",
+  "id": "uuid-of-interview",
   "clarity": 8,
   "patience": 7,
   "fluency": 9,
@@ -393,69 +446,29 @@ CREATE TABLE interviews (
   "simplicity": 7,
   "overallScore": 8,
   "summary": "The candidate demonstrated strong communication...",
-  "evidence": ["Clear use of analogies when explaining fractions..."],
-  "strengths": ["Excellent clarity", "Natural conversational flow"],
-  "improvements": ["Could show more patience with follow-up questions"]
+  "strengths": ["Excellent clarity", "Natural flow"],
+  "improvements": ["Could show more patience"]
 }
 ```
 
 ---
 
-## Evaluation Dimensions
-
-```
-                    ┌─────────────────────────────┐
-                    │      INTERVIEW TRANSCRIPT     │
-                    └──────────────┬──────────────┘
-                                   │
-                          Gemini 2.0 Flash
-                                   │
-            ┌──────────────────────┼──────────────────────┐
-            ▼                      ▼                      ▼
-    ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-    │   💎 Clarity  │     │ 🌱 Patience  │     │  🗣️ Fluency  │
-    │   (1-10)      │     │   (1-10)      │     │   (1-10)     │
-    │               │     │               │     │              │
-    │ • Precision   │     │ • Calm under  │     │ • Confident  │
-    │ • Examples    │     │   confusion   │     │ • Natural    │
-    │ • Structure   │     │ • Wait time   │     │ • No filler  │
-    └──────────────┘     └──────────────┘     └──────────────┘
-
-            ┌──────────────┐              ┌──────────────┐
-            │  🤗 Warmth    │              │ ✨ Simplicity │
-            │   (1-10)      │              │   (1-10)      │
-            │               │              │               │
-            │ • Encouraging │              │ • Breaks down │
-            │ • Friendly    │              │   complexity  │
-            │ • Safe space  │              │ • No jargon   │
-            └──────────────┘              └──────────────┘
-                         │
-                         ▼
-              ┌────────────────────┐
-              │  📊 Overall Score   │
-              │  (Weighted Average) │
-              │  Favors Clarity    │
-              │  & Patience        │
-              └────────────────────┘
-```
-
----
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - **Node.js** ≥ 18.x
-- **npm** ≥ 9.x
-- A [Vapi AI](https://vapi.ai) account (Public API Key)
-- A [Google AI Studio](https://aistudio.google.com) account (Gemini API Key)
-- A [Neon](https://neon.tech) PostgreSQL database
+- [Vapi AI](https://vapi.ai) account (Public API Key)
+- [Google AI Studio](https://aistudio.google.com) account (Gemini API Key)
+- [Clerk](https://clerk.com) account (Auth keys)
+- [Neon](https://neon.tech) PostgreSQL database
+- [Resend](https://resend.com) account _(optional — for email)_
 
 ### Installation
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/ai-tutor-screener.git
+git clone https://github.com/berserk3142-max/-AI-Tutor-Screener.git
 cd ai-tutor-screener
 
 # 2. Install dependencies
@@ -472,12 +485,12 @@ npx drizzle-kit push
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) 🎉
 
 ### Available Scripts
 
 | Command | Description |
-|---------|-------------|
+|:--------|:------------|
 | `npm run dev` | Start dev server (Turbopack) |
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
@@ -487,80 +500,97 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## Environment Variables
+## 🔑 Environment Variables
 
-Create a `.env.local` file in the project root:
+Create a `.env.local` file:
 
 ```env
-# Gemini — Used for AI evaluation after interview
-GEMINI_API_KEY=your_gemini_api_key_here
+# Gemini — AI Evaluation Engine
+GEMINI_API_KEY=your_gemini_api_key
 
-# Vapi AI — Voice conversation engine (Public Key, safe for client-side)
-NEXT_PUBLIC_VAPI_API_KEY=your_vapi_public_key_here
+# Vapi AI — Voice Conversation Engine
+NEXT_PUBLIC_VAPI_API_KEY=your_vapi_public_key
 
-# ElevenLabs — Voice ID for Nova's TTS (configured in Vapi)
-ELEVENLABS_API_KEY=your_elevenlabs_key_here
-ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
+# Neon — PostgreSQL Database
+DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
 
-# Neon Database — PostgreSQL connection string
-DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+# Clerk — Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+CLERK_SECRET_KEY=sk_test_xxx
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+
+# Resend — Email Notifications
+RESEND_API_KEY=re_xxx
+EMAIL_FROM=onboarding@resend.dev
 ```
 
-### Where to get the keys:
+### Where to get the keys
 
-| Key | Where to get it |
-|-----|----------------|
-| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) → Create API Key |
-| `NEXT_PUBLIC_VAPI_API_KEY` | [Vapi Dashboard](https://dashboard.vapi.ai) → Settings → Public Key |
-| `ELEVENLABS_API_KEY` | [ElevenLabs](https://elevenlabs.io) → Profile → API Key |
-| `DATABASE_URL` | [Neon Console](https://console.neon.tech) → Connection Details |
+| Key | Source |
+|:----|:-------|
+| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) |
+| `NEXT_PUBLIC_VAPI_API_KEY` | [Vapi Dashboard](https://dashboard.vapi.ai) → Settings |
+| `DATABASE_URL` | [Neon Console](https://console.neon.tech) |
+| `CLERK_*` keys | [Clerk Dashboard](https://dashboard.clerk.com) → API Keys |
+| `RESEND_API_KEY` | [Resend Dashboard](https://resend.com) → API Keys |
 
 ---
 
-## Deployment
+## 🌐 Deployment
 
 ### Deploy to Vercel
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
+1. Push code to GitHub
+2. Go to [vercel.com](https://vercel.com) → **Import Project**
+3. Select your repo → Add **all environment variables** from above
+4. Click **Deploy** ✅
+5. Add your Vercel URL to [Clerk Dashboard](https://dashboard.clerk.com) → Domains
 
-# Deploy
-vercel --prod
-```
+### Other Platforms
 
-Add all environment variables in the Vercel Dashboard → Project Settings → Environment Variables.
-
-### Deploy to Other Platforms
-
-The app is a standard Next.js application. It can be deployed to any platform that supports Node.js:
-
-- **Vercel** (recommended) — Zero-config Next.js hosting
-- **Railway** — Full-stack deployment
-- **Render** — Docker or Node.js deployment
-- **AWS Amplify** — Managed Next.js hosting
+| Platform | Notes |
+|:---------|:------|
+| **Vercel** | Zero-config Next.js hosting (recommended) |
+| **Railway** | Full-stack deployment |
+| **Render** | Docker or Node.js |
+| **AWS Amplify** | Managed Next.js hosting |
 
 ---
 
-## Design System
+## 🎨 Design System
 
-The UI follows a **Neo-Brutalist / Kinetic Terminal** aesthetic:
+NovaAI uses a **Neo-Brutalist / Kinetic Terminal** aesthetic:
 
-- **Colors**: Black background, `#bcff5f` (acid green), `#ff51fa` (hot pink), `#00ffff` (cyan)
-- **Typography**: Space Grotesk (geometric sans-serif)
-- **Shadows**: Hard 4-8px offset box shadows (no blur)
-- **Borders**: 4px solid, 0px border-radius
-- **Animations**: Pulse glows, fade-in-up, shimmer, wave bars
-- **Grid Pattern**: Subtle green grid lines as background texture
+| Element | Value |
+|:--------|:------|
+| **Background** | `#0e0e0e` (near-black) |
+| **Accent Primary** | `#bcff5f` (acid green) |
+| **Accent Secondary** | `#ff51fa` (hot pink) |
+| **Accent Tertiary** | `#00ffff` (cyan) |
+| **Typography** | Space Grotesk (geometric sans-serif) |
+| **Icons** | Material Symbols Outlined |
+| **Borders** | 4px solid, 0px border-radius |
+| **Shadows** | Hard 4–8px offset (no blur) |
+| **Animations** | Pulse glows, fade-in-up, shimmer, wave bars |
+| **Background** | Subtle green grid pattern overlay |
 
 ---
 
-## License
+## 📄 License
 
 This project is private and built for Cuemath's tutor screening process.
 
 ---
 
-<p align="center">
-  Built with 🧠 by <strong>NovaAI Team</strong> — Powered by Vapi, Gemini & Next.js
-</p>
+<div align="center">
+
+**Built with 🧠 by the NovaAI Team**
+
+_Powered by Vapi AI · Google Gemini · Clerk · Resend · Next.js_
+
+[![GitHub](https://img.shields.io/badge/GitHub-Repo-181717?style=for-the-badge&logo=github)](https://github.com/berserk3142-max/-AI-Tutor-Screener)
+
+</div>
